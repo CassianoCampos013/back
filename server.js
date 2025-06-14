@@ -25,13 +25,37 @@ app.post('/usuarios', async (req, res) => {
 // Listagem de todos os usuários
 app.get('/usuarios', async (req, res) => {
   try {
-    const todosUsuarios = await prisma.user.findMany()
-    res.status(200).json(todosUsuarios)
+    const { name, email, age } = req.query;
+
+    const usuarios = await prisma.user.findMany({
+      where: {
+        ...(name && {
+          name: {
+            contains: name,
+            mode: 'insensitive',
+          },
+        }),
+        ...(email && {
+          email: {
+            contains: email,
+            mode: 'insensitive',
+          },
+        }),
+        ...(age && !isNaN(Number(age)) && {
+          age: Number(age),
+        }),
+      },
+    });
+
+    return res.status(200).json(usuarios);
   } catch (error) {
-    console.error(error)
-    res.status(500).json({ error: 'Erro ao buscar usuários' })
+    console.error('Erro ao buscar usuários:', error);
+    return res.status(500).json({
+      error: 'Erro interno ao buscar usuários',
+    });
   }
-})
+});
+
 
 app.put('/usuarios/:id', async (req, res) => {
       await prisma.user.update({
